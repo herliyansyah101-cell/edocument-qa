@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Monitoring Arsip</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+  <div class="header">
+    <h2>Monitoring Arsip</h2>
+  </div>
+
+  <div class="container">
+
+    <div class="card">
+      <h3>Data Lemari & Rak</h3>
+
+      <div id="dataMonitoring"></div>
+
+    </div>
+  </div>
+
+  <script>
+
+    async function loadMonitoring() {
+
+      const res = await fetch("/api/monitoring-full");
+      let data = await res.json();
+
+      // 🔥 biar aman kalau bukan array
+      if (!Array.isArray(data)) {
+        data = data ? [data] : [];
+      }
+
+      let html = "";
+
+      // CONFIG
+      const totalLemari = 8;
+      const totalRak = 6;
+      const totalBox = 9;
+      const maxBox = 2; // kapasitas box
+
+      for (let l = 1; l <= totalLemari; l++) {
+
+        html += `<h3>Lemari ${l}</h3>`;
+        html += `<div style="display:grid;grid-template-columns:repeat(9,1fr);gap:10px;margin-bottom:20px;">`;
+        for (let r = 1; r <= totalRak; r++) {
+          for (let b = 1; b <= totalBox; b++) {
+
+            const items = data.filter(d =>
+              d.lemari == l &&
+              d.rak == r &&
+              d.box == b
+            );
+
+            const isFull = items.length >= maxBox;
+
+            if (items.length > 0) {
+
+              let isi = "";
+              items.forEach(d => {
+                isi += `• Batch: ${d.batch}<br>`;
+              });
+
+              html += `
+            <div onclick="lihatDetail(${l},${r},${b})"
+              style="
+                background:${isFull ? '#ff4d4d' : '#ffb3b3'};
+                padding:10px;
+                border-radius:8px;
+                cursor:pointer;
+                color:${isFull ? 'white' : 'black'};
+                box-shadow:0 4px 10px rgba(0,0,0,0.1);
+              ">
+              <b>L${l}-R${r}-B${b}</b><br>
+
+              <small>
+                ${items.length}/${maxBox} dokumen
+                ${isFull ? ' (FULL)' : ''}
+              </small><br>
+
+              ${isi}
+            </div>
+          `;
+
+            } else {
+
+              html += `
+            <div onclick="lihatDetail(${l},${r},${b})"
+              style="
+                background:#b3ffb3;
+                padding:10px;
+                border-radius:8px;
+                cursor:pointer;
+                box-shadow:0 4px 10px rgba(0,0,0,0.1);
+              ">
+              <b>L${l}-R${r}-B${b}</b><br>
+              Kosong
+            </div>
+          `;
+
+            }
+
+          }
+        }
+
+        html += `</div><br>`;
+      }
+
+      document.getElementById("dataMonitoring").innerHTML = html;
+    }
+
+
+    // ================= MODAL =================
+
+    function closeModal() {
+      document.getElementById("modalDetail").style.display = "none";
+    }
+
+
+    async function lihatDetail(lemari, rak, box) {
+
+      try {
+        const res = await fetch(`/api/dokumen-detail?lemari=${lemari}&rak=${rak}&box=${box}`);
+        let data = await res.json();
+
+        // 🔥 FIX biar selalu array
+        if (!Array.isArray(data)) {
+          data = data ? [data] : [];
+        }
+
+        const modal = document.getElementById("modalDetail");
+        const isi = document.getElementById("detailIsi");
+
+        let html = "";
+
+        if (data.length === 0) {
+          html = "<b>Tidak ada dokumen</b>";
+        } else {
+
+          data.forEach(d => {
+            html += `
+          <div style="margin-bottom:10px;padding:10px;background:#f5f5f5;border-radius:8px;">
+            <div><b>Nomor:</b> ${d.nomor_dokumen || '-'}</div>
+            <div><b>Produk:</b> ${d.produk || '-'}</div>
+            <div><b>Batch:</b> ${d.batch || '-'}</div>
+            <div><b>Line:</b> ${d.line || '-'}</div>
+            <div><b>Tahun:</b> ${d.tahun || '-'}</div>
+            <div>
+              <b>Status:</b> 
+              <span style="color:${d.status === 'dipinjam' ? 'red' : 'green'}">
+                ${d.status || '-'}
+              </span>
+            </div>
+          </div>
+        `;
+          });
+
+        }
+
+        isi.innerHTML = html;
+        modal.style.display = "block";
+
+      } catch (err) {
+        console.error("ERROR DETAIL:", err);
+        alert("Gagal ambil data");
+      }
+    }
+
+
+    // LOAD AWAL
+    loadMonitoring();
+
+  </script>
+
+
+  <!-- MODAL -->
+  <div id="modalDetail" class="modal">
+
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h3>Detail Dokumen</h3>
+        <span class="close" onclick="closeModal()">&times;</span>
+      </div>
+
+      <div id="detailIsi" class="modal-body"></div>
+
+    </div>
+
+  </div>
+
+</body>
+
+</html>

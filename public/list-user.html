@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>List Dokumen</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+    <div class="header">
+        <h2>List Dokumen (Peminjaman)</h2>
+    </div>
+
+    <div class="container">
+
+        <div class="nav-top">
+            <button onclick="goBack()" class="btn-back">← Kembali</button>
+        </div>
+
+        <div class="card">
+            <h3>Data Dokumen</h3>
+
+            <table border="1" width="100%" id="tabelUser">
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>Kategori</th>
+                        <th>Line</th>
+                        <th>Produk</th>
+                        <th>Batch</th>
+                        <th>Tahun</th>
+                        <th>Lokasi</th>
+                        <th>Status</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+
+        </div>
+
+    </div>
+
+    <script>
+
+        // ================= LOAD DATA =================
+        async function loadUser() {
+
+            const res = await fetch("/api/dokumen");
+            const data = await res.json();
+
+            let html = "";
+
+            data.forEach((d, i) => {
+
+                let lokasi = d.lemari ? `L${d.lemari}-R${d.rak}-B${d.box}` : "-";
+
+                let tombol = "";
+
+                if (d.status === "tersedia") {
+                    tombol = `<button style="background:#4CAF50;color:white;" onclick="pinjam(${d.id})">Pinjam</button>`;
+                }
+                else if (d.status === "dipinjam") {
+                    tombol = `<button style="background:#ff9800;color:white;" onclick="kembalikan(${d.id})">Kembalikan</button>`;
+                }
+                else {
+                    tombol = "-";
+                }
+
+                html += `
+      <tr>
+        <td>${i + 1}</td>
+        <td>${d.kategori}</td>
+        <td>${d.line || "-"}</td>
+        <td>${d.produk}</td>
+        <td>${d.batch}</td>
+        <td>${d.tahun}</td>
+        <td>${lokasi}</td>
+        <td>${d.status}</td>
+        <td>${tombol}</td>
+      </tr>
+    `;
+            });
+
+            document.querySelector("#tabelUser tbody").innerHTML = html;
+        }
+
+
+        // ================= PINJAM =================
+        async function pinjam(id) {
+
+            const userData = JSON.parse(localStorage.getItem("user"));
+            const nama = userData?.email || "user";
+
+            await fetch("/api/pinjam", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    dokumen_id: id,
+                    nama: nama
+                })
+            });
+            showNotif("Request peminjaman dikirim");
+            loadData();
+        }
+
+
+        // ================= KEMBALIKAN =================
+        async function kembalikan(id) {
+
+            const konfirmasi = confirm("Yakin mau mengembalikan dokumen?");
+            if (!konfirmasi) return;
+
+            await fetch("/api/request-kembali", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ dokumen_id: id })
+            });
+
+            showNotif("Request pengembalian dikirim");
+            loadUser();
+        }
+
+        function showNotif(message, type = "success") {
+
+            const notif = document.getElementById("notif");
+
+            notif.innerText = message;
+            notif.className = "notif show";
+
+            if (type === "error") {
+                notif.classList.add("error");
+            }
+
+            setTimeout(() => {
+                notif.classList.remove("show");
+            }, 1200);
+        }
+
+        function goBack() {
+            if (document.referrer) {
+                window.history.back();
+            } else {
+                window.location.href = "index.html";
+            }
+        }
+
+        // ================= LOAD AWAL =================
+        loadUser();
+
+    </script>
+
+    <div id="notif" class="notif"></div>
+
+</body>
+
+</html>

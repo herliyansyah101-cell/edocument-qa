@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Approval Peminjaman</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+  <div class="header">
+    <img src="images/logo.png">
+    <h2>Approval Peminjaman</h2>
+  </div>
+
+  <div class="container">
+
+    <div class="card">
+
+      <h3>Request Peminjaman</h3>
+
+      <table border="1" width="100%" id="tabelPeminjaman">
+        <thead>
+          <tr>
+            <th>No</th>
+            <th>Tanggal Pinjam</th>
+            <th>Tanggal Kembali</th>
+            <th>Nama</th>
+            <th>Kategori</th>
+            <th>Kode</th>
+            <th>Batch</th>
+            <th>Lokasi</th>
+            <th>Status</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+
+    </div>
+
+  </div>
+
+  <script>
+
+    async function loadData() {
+
+      try {
+        const res = await fetch("/api/peminjaman");
+        const data = await res.json();
+
+        let html = "";
+
+        data.forEach((d, i) => {
+
+          let lokasi = "-";
+          if (d.lemari) {
+            lokasi = `L${d.lemari}-R${d.rak}-B${d.box}`;
+          }
+
+          let aksi = "-";
+
+          if (d.status === "menunggu") {
+            aksi = `<button onclick="openConfirm(${d.id}, 'approve')">Approve</button>`;
+          }
+          else if (d.status === "dipinjam") {
+            aksi = `<button onclick="openConfirm(${d.id}, 'kembali')">Kembalikan</button>`;
+          }
+
+          html += `
+        <tr>
+          <td>${i + 1}</td>
+          <td>${d.tanggal_pinjam || '-'}</td>
+          <td>${d.tanggal_kembali || '-'}</td>
+          <td>${d.nama || '-'}</td>
+          <td>${d.kategori || '-'}</td>
+          <td>${d.kode_produk || '-'}</td>
+          <td>${d.batch || '-'}</td>
+          <td>${lokasi}</td>
+          <td>${d.status}</td>
+          <td>${aksi}</td>
+        </tr>
+      `;
+        });
+
+        document.querySelector("#tabelPeminjaman tbody").innerHTML = html;
+
+      } catch (err) {
+        console.error("ERROR LOAD:", err);
+      }
+    }
+
+    function showNotif(pesan) {
+      const notif = document.getElementById("notif");
+      notif.innerText = pesan;
+      notif.style.display = "block";
+
+      setTimeout(() => {
+        notif.style.display = "none";
+      }, 1500);
+    }
+
+    let selectedId = null;
+    let actionType = "";
+
+    // ================= OPEN MODAL =================
+    function openConfirm(id, type) {
+      selectedId = id;
+      actionType = type;
+
+      const text = document.getElementById("confirmText");
+
+      if (type === "approve") {
+        text.innerText = "Yakin approve peminjaman ini?";
+      } else {
+        text.innerText = "Yakin dokumen sudah dikembalikan?";
+      }
+
+      document.getElementById("modalConfirm").style.display = "flex";
+    }
+
+    function closeConfirm() {
+      document.getElementById("modalConfirm").style.display = "none";
+    }
+
+    // ================= CONFIRM YES =================
+    async function confirmYes() {
+
+      if (actionType === "approve") {
+        await fetch("/api/approve", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: selectedId })
+        });
+
+        showNotif("Berhasil approve");
+
+      } else {
+
+        await fetch("/api/kembalikan", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: selectedId })
+        });
+
+        showNotif("Dokumen dikembalikan");
+      }
+
+      closeConfirm();
+      loadData();
+    }
+
+    async function kembalikan(id) {
+      console.log("klik kembalikan:", id);
+
+      await fetch("/api/kembalikan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id })
+      });
+
+      showNotif("Dokumen dikembalikan");
+      loadData();
+    }
+    loadData();
+
+  </script>
+
+  <div id="notif" class="notif"></div>
+
+  <div id="modalConfirm" class="modal-confirm">
+    <div class="modal-box">
+      <h3>Konfirmasi</h3>
+      <p id="confirmText">Yakin?</p>
+
+      <div class="modal-actions">
+        <button onclick="confirmYes()" class="btn-yes">Ya</button>
+        <button onclick="closeConfirm()" class="btn-no">Batal</button>
+      </div>
+    </div>
+  </div>
+
+</body>
+
+</html>

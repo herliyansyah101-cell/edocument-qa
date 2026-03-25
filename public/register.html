@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Register</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body class="login-page">
+
+  <div class="login-container">
+
+    <div class="login-card">
+
+      <img src="images/logo.png" class="login-logo">
+
+      <h2>Daftar Akun</h2>
+      <p class="subtitle">e-Document QA</p>
+
+      <input type="text" id="email" placeholder="Email">
+      <input type="password" id="password" placeholder="Password">
+
+      <button onclick="register()">Daftar</button>
+
+      <p style="margin-top:10px;">
+        Sudah punya akun? <a href="login.html">Login</a>
+      </p>
+
+    </div>
+
+  </div>
+
+  <script>
+
+    async function register() {
+
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+
+      const res = await fetch("/api/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ email, password })
+      });
+
+      const hasil = await res.text();
+
+      alert(hasil);
+
+      if (hasil === "Register berhasil") {
+        window.location.href = "login.html";
+      }
+
+    }
+
+  </script>
+
+</body>
+
+</html>

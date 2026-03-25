@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>User</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+  <div class="header">
+    <h2>Manajemen User</h2>
+  </div>
+
+ <div style="display:flex;gap:20px;margin-top:10px;">
+
+  <div class="stat-card">
+    <h4>Total</h4>
+    <h2 id="totalUser"></h2>
+  </div>
+
+  <div class="stat-card">
+    <h4>Admin</h4>
+    <h2 id="totalAdmin"></h2>
+  </div>
+
+  <div class="stat-card">
+    <h4>User</h4>
+    <h2 id="totalNormal"></h2>
+  </div>
+
+</div>
+
+    <!-- PROFIL -->
+    <div class="card">
+      <h3>👤 Profil</h3>
+      <p>Email: <span id="emailUser"></span></p>
+      <p>Role: <span id="roleUser"></span></p>
+
+      <button onclick="logout()" style="background:red;color:white;padding:10px;border:none;border-radius:8px;">
+        Logout
+      </button>
+    </div>
+
+    <!-- ADMIN ONLY -->
+    <div id="adminPanel" style="display:none;">
+
+      <div class="card">
+        <h3>➕ Tambah User</h3>
+
+        <div class="form-grid">
+
+          <div class="form-group">
+            <label>Email</label>
+            <input type="text" id="newEmail" placeholder="Masukkan email">
+          </div>
+
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="newPassword" placeholder="Masukkan password">
+          </div>
+
+          <div class="form-group">
+            <label>Role</label>
+            <select id="newRole">
+              <option value="user">User</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+
+        </div>
+
+        <div style="margin-top:15px;">
+          <button class="btn-save" onclick="tambahUser()">+ Tambah User</button>
+        </div>
+
+      </div>
+      <div style="margin-bottom:15px;">
+   <input 
+    type="text" 
+    id="searchUser" 
+    placeholder="🔍 Cari email user..."
+    onkeyup="filterUser()"
+    style="padding:10px;width:300px;border-radius:8px;border:1px solid #ccc;"
+  >
+</div>
+        <table border="1" width="100%" id="tabelUser">
+          <thead>
+            <tr>
+              <th>No</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    const user = JSON.parse(localStorage.getItem("user"));
+
+    document.getElementById("emailUser").innerText = user?.email;
+    document.getElementById("roleUser").innerText = user?.role;
+
+    // 🔥 tampilkan admin panel
+    if (user?.role === "admin") {
+      document.getElementById("adminPanel").style.display = "block";
+    }
+
+    // ================= LOAD USER =================
+    async function loadUsers() {
+
+      const res = await fetch("/api/users", {
+        headers: {
+          role: user.role
+        }
+      });
+      const data = await res.json();
+
+      let admin = 0;
+      let userBiasa = 0;
+
+      data.forEach(u => {
+        if (u.role === "admin") admin++;
+        else userBiasa++;
+      });
+
+      document.getElementById("totalUser").innerText = data.length;
+      document.getElementById("totalAdmin").innerText = admin;
+      document.getElementById("totalNormal").innerText = userBiasa;
+
+      let html = "";
+
+      data.forEach((u, i) => {
+
+        html += `
+      <tr>
+        <td>${i + 1}</td>
+        <td>${u.email}</td>
+        <td>${u.role}</td>
+        <td><span style="color:green;">● Online</span></td>
+        <td>
+         ${u.email !== user.email ?
+            `<button class="btn-delete" onclick="hapusUser(${u.id})">Hapus</button>`
+            : `<span style="color:gray;">-</span>`
+          }
+         <button class="btn-edit" onclick="ubahRole(${u.id}, '${u.role}')">Role</button>
+        </td>
+      </tr>
+    `;
+      });
+
+      document.querySelector("#tabelUser tbody").innerHTML = html;
+    }
+
+    // ================= TAMBAH USER =================
+    async function tambahUser() {
+
+      const email = document.getElementById("newEmail").value;
+      const password = document.getElementById("newPassword").value;
+      const role = document.getElementById("newRole").value;
+
+      if (!email || !password) {
+        showNotif("Email & password wajib diisi", "error");
+        return;
+      }
+
+      const res = await fetch("/api/add-user", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          role: user.role
+        },
+        body: JSON.stringify({ email, password, role })
+      });
+
+      const hasil = await res.text();
+      showNotif(hasil);
+
+      loadUsers();
+      document.getElementById("newEmail").value = "";
+      document.getElementById("newPassword").value = "";
+      document.getElementById("newEmail").focus();
+    }
+
+    // ================= HAPUS =================
+    async function hapusUser(id) {
+
+      if (!confirm("Yakin hapus user?")) return;
+
+      await fetch("/api/delete-user", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          role: user.role
+        },
+        body: JSON.stringify({ id })
+      });
+
+      showNotif("User berhasil dihapus");
+
+      loadUsers();
+    }
+
+    // ================= UBAH ROLE =================
+    async function ubahRole(id, role) {
+
+      const newRole = role === "admin" ? "user" : "admin";
+
+      await fetch("/api/update-role", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          role: user.role
+        },
+        body: JSON.stringify({ id, role: newRole })
+      });
+
+      showNotif("Role berhasil diubah");
+
+      loadUsers();
+    }
+
+    // ================= LOGOUT =================
+    function logout() {
+      localStorage.clear();
+      window.location.href = "login.html";
+    }
+
+    function showNotif(message, type = "success") {
+
+      const notif = document.getElementById("notif");
+
+      notif.innerText = message;
+      notif.className = "notif show";
+
+      if (type === "error") {
+        notif.classList.add("error");
+      }
+
+      setTimeout(() => {
+        notif.classList.remove("show");
+      }, 1500);
+    }
+
+    function filterUser(){
+    const keyword = document.getElementById("searchUser").value.toLowerCase();
+    const rows = document.querySelectorAll("#tabelUser tbody tr");
+
+    rows.forEach(row => {
+    const email = row.children[1].innerText.toLowerCase();
+    row.style.display = email.includes(keyword) ? "" : "none";
+  });
+}
+
+    // LOAD
+    loadUsers();
+  </script>
+
+  <div id="notif" class="notif"></div>
+
+</body>
+
+</html>

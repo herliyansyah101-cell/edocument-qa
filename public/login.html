@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Login</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body class="login-page">
+
+  <div class="login-container">
+
+    <div class="login-card">
+
+      <img src="images/logo.png" class="login-logo">
+
+      <h2>e-Document QA</h2>
+      <p class="subtitle">PT FIMA</p>
+
+      <input type="text" id="username">
+      <input type="password" id="password">
+
+      <button onclick="login()">Login</button>
+
+      <p style="margin-top:10px;">
+        Belum punya akun? <a href="register.html">Daftar</a>
+
+    </div>
+
+  </div>
+
+  <script>
+
+    async function login() {
+
+      const userInput = document.getElementById("username").value;
+      const passInput = document.getElementById("password").value;
+
+      if (!userInput || !passInput) {
+        alert("Username & Password wajib diisi");
+        return;
+      }
+
+      try {
+
+        const res = await fetch("/api/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            username: userInput,
+            password: passInput
+          })
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+
+          // 🔥 simpan full user
+          localStorage.setItem("user", JSON.stringify(data.user));
+
+          // 🔥 ambil role & email (WAJIB)
+          localStorage.setItem("role", data.user.role);
+          localStorage.setItem("email", data.user.email);
+
+          // 🔥 notif sukses (biar ga kosong)
+          alert("Login berhasil");
+
+          // 🔥 pindah halaman
+          setTimeout(() => {
+            window.location.href = "index.html";
+          }, 200);
+
+        } else {
+          alert("Email atau password salah");
+        }
+
+      } catch (err) {
+        console.error(err);
+        alert("Terjadi error");
+      }
+
+    }
+
+  </script>
+
+</body>
+
+</html>

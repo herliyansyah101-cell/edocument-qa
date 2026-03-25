@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>e-Document QA</title>
+
+  <link rel="stylesheet" href="css/style.css">
+
+</head>
+
+<body>
+
+  <div class="header">
+    <img src="images/logo.png">
+    <h2>e-Document QA - FIMA</h2>
+  </div>
+
+  <div class="layout">
+
+    <div class="sidebar">
+
+      <h3>Menu</h3>
+
+      <a href="index.html">Dashboard</a>
+
+      <a href="list.html">Dokumen</a>
+
+      <a href="list-user.html">List Dokumen</a>
+
+      <a href="tambah.html">Tambah Dokumen</a>
+
+      <a href="peminjaman.html">
+        Peminjaman <span id="notifRequest" style="color:yellow;"></span>
+      </a>
+
+      <a href="monitoring.html">Monitoring Arsip</a>
+
+      <a href="user.html">User</a>
+
+    </div>
+
+    <div class="content">
+      <div class="nav-top">
+      <button onclick="goBack()" class="btn-back">← Kembali</button>
+      </div>
+
+      <div class="card">
+        <h3>Dashboard</h3>
+        <p>Sistem Monitoring Dokumen QA</p>
+      </div>
+
+      <div class="dashboard-grid">
+
+        <div class="card stat modern blue">
+          <h4>Total Dokumen</h4>
+          <h1 id="total">0</h1>
+        </div>
+
+        <div class="card stat modern orange">
+          <h4>Dipinjam</h4>
+          <h1 id="dipinjam">0</h1>
+        </div>
+
+        <div class="card stat modern red">
+          <h4>Request</h4>
+          <h1 id="request">0</h1>
+        </div>
+
+        <div class="card stat modern green">
+          <h4>Kelengkapan</h4>
+          <h1 id="persen">0%</h1>
+        </div>
+
+      </div>
+
+      <!-- PROGRESS BAR -->
+      <div class="card">
+        <h3>Progress Kelengkapan Dokumen</h3>
+        <div class="progress-bar">
+          <div id="progressFill"></div>
+        </div>
+      </div>
+
+      <!-- PRIORITAS -->
+      <div class="card">
+        <h3>⚠️ Dokumen Prioritas</h3>
+        <div id="prioritasList"></div>
+      </div>
+
+      <script>
+
+        window.onload = function () {
+
+          const userData = localStorage.getItem("user");
+
+          let user = null;
+          try {
+            user = userData ? JSON.parse(userData) : null;
+          } catch (e) {
+            user = null;
+          }
+
+          if (!user) {
+            window.location.href = "login.html";
+          }
+
+          console.log("USER LOGIN:", user);
+        }
+
+        async function loadDashboard() {
+
+          const res = await fetch("/api/dashboard");
+          const data = await res.json();
+
+          document.getElementById("total").innerText = data.total;
+          document.getElementById("dipinjam").innerText = data.dipinjam;
+          document.getElementById("request").innerText = data.request;
+
+        }
+
+        loadDashboard();
+
+        async function loadExtra() {
+
+          const res = await fetch("/api/dokumen");
+          const data = await res.json();
+
+          let lengkap = 0;
+          let prioritasHTML = "";
+
+          data.forEach(d => {
+
+            const total = 5;
+
+            const terisi =
+              (d.coa ? 1 : 0) +
+              (d.chp_qa ? 1 : 0) +
+              (d.em ? 1 : 0) +
+              (d.chp_qc ? 1 : 0) +
+              (d.approve_manager ? 1 : 0);
+
+            if (terisi === total) {
+              lengkap++;
+            } else {
+              prioritasHTML += `
+        <div class="item-prioritas">
+          ${d.produk || "-"} - Batch ${d.batch}
+        </div>
+      `;
+            }
+
+          });
+
+          const persen = data.length ? Math.round((lengkap / data.length) * 100) : 0;
+
+          document.getElementById("persen").innerText = persen + "%";
+          document.getElementById("progressFill").style.width = persen + "%";
+
+          document.getElementById("prioritasList").innerHTML =
+            prioritasHTML || "Semua dokumen lengkap 🎉";
+        }
+
+        async function loadNotif() {
+
+          const res = await fetch("/api/dashboard");
+          const data = await res.json();
+
+          if (data.request > 0) {
+            document.getElementById("notifRequest").innerText = `(${data.request})`;
+          } else {
+            document.getElementById("notifRequest").innerText = "";
+          }
+
+        }
+        const userData = localStorage.getItem("user");
+        let user = null;
+
+        try {
+          user = userData ? JSON.parse(userData) : null;
+        } catch (e) {
+          user = null;
+        }
+
+        // 🔥 kalau belum login → balik ke login
+        if (!user) {
+          window.location.href = "login.html";
+        }
+
+        // 🔥 role fix
+        const role = user.role;
+
+        // 🔥 sembunyiin menu kalau bukan admin
+        if (role !== "admin") {
+
+          const menuTambah = document.querySelector('a[href="tambah.html"]');
+          const menuPinjam = document.querySelector('a[href="peminjaman.html"]');
+          const menuUser = document.querySelector('a[href="user.html"]');
+
+          if (menuTambah) menuTambah.style.display = "none";
+          if (menuPinjam) menuPinjam.style.display = "none";
+          if (menuUser) menuUser.style.display = "none";
+        }
+
+        function goBack(){
+         if(document.referrer){
+          window.history.back();
+       } else {
+         window.location.href = "index.html";
+       }
+      }
+        loadNotif();
+
+      </script>
+    </div>
+
+  </div>
+
+  </div>
+
+</body>
+
+</html>

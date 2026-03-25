@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Tambah Dokumen</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+  <div class="header">
+    <img src="images/logo.png">
+    <h2>Tambah Dokumen - e-Document QA</h2>
+  </div>
+
+  <div class="container">
+
+    <div class="form-container">
+
+      <div class="form-title">📄 Form Input Dokumen</div>
+
+      <form id="formDokumen" class="form-grid">
+
+        <!-- KATEGORI -->
+        <div class="form-group">
+          <label>Kategori</label>
+          <select id="kategori" onchange="ubahForm()">
+            <option value="">-- Pilih --</option>
+            <option value="PPI">PPI</option>
+            <option value="PQR">PQR</option>
+          </select>
+        </div>
+
+        <!-- ===================== FORM PPI ===================== -->
+        <div id="formPPI" class="form-section" style="display:none; grid-column: span 2;">
+          <h4>Informasi Dokumen</h4>
+
+          <div class="form-group">
+            <label>Kode Produk</label>
+            <input type="text" id="kode_produk">
+          </div>
+
+          <div class="form-group">
+            <label>Nama Produk</label>
+            <input type="text" id="produk" readonly>
+          </div>
+
+          <div class="form-group">
+            <label>Batch</label>
+            <input type="text" id="batch">
+          </div>
+
+          <div class="form-group">
+            <label>Line</label>
+            <input type="text" id="line">
+          </div>
+
+          <div class="form-group">
+            <label>Tahun</label>
+            <input type="number" id="tahun">
+          </div>
+
+          <h4>Kelengkapan Dokumen</h4>
+
+          <div class="checklist-grid">
+
+            <label><input type="checkbox" id="coa"> COA</label>
+            <label><input type="checkbox" id="chp_qa"> CHP QA</label>
+            <label><input type="checkbox" id="em"> EM</label>
+            <label><input type="checkbox" id="wfi"> WFI</label>
+            <label><input type="checkbox" id="chp_qc"> CHP QC</label>
+            <label><input type="checkbox" id="approve"> Approve Manager</label>
+
+          </div>
+
+          <!-- ===================== FORM PQR ===================== -->
+          <div id="formPQR" style="display:none; grid-column: span 2;">
+
+            <div class="form-group">
+              <label>Kode Produk</label>
+              <input type="text" id="kode_produk_pqr">
+            </div>
+
+            <div class="form-group">
+              <label>Nama Produk</label>
+              <input type="text" id="produk_pqr">
+            </div>
+
+            <div class="form-group">
+              <label>Nomor Dokumen</label>
+              <input type="text" id="nomor">
+            </div>
+
+          </div>
+
+          <button type="submit" class="btn-save">Simpan Dokumen</button>
+
+      </form>
+
+      <script>
+        // =================== UBAH FORM ===================
+        function ubahForm() {
+          const kategori = document.getElementById("kategori").value;
+
+          document.getElementById("formPPI").style.display = "none";
+          document.getElementById("formPQR").style.display = "none";
+
+          if (kategori === "PPI") {
+            document.getElementById("formPPI").style.display = "block";
+          }
+
+          if (kategori === "PQR") {
+            document.getElementById("formPQR").style.display = "block";
+          }
+        }
+
+        // =================== PRODUK MAP ===================
+        const produkMap = {
+          "VCRVF": "CRAVIT 750 MG FLEXIBAG 150 ML /1",
+          "VCRVG": "CRAVIT 500 MG FLEXIBAG 100 ML /1",
+          "VRAMA": "RENAXIMIN 200 ML FLEXIBAG SOLUTION FOR INJECTION",
+          "VKAMA": "KALBAMIN 500 ML FLEXIBAG SOLUTION FOR INJECTION",
+          "VLONA": "LEVOFLOXACIN 500 MG/100 ML INFUS/1",
+          "VLONB": "LEVOFLOXACIN 750 MG/150 ML INFUS/1",
+          "VMONA": "METROFUSIN 500 MG 100 ML/1",
+          "VMNTA": "MANNITOL 20% INFUS FLEXIBAG 500 ML/1",
+          "VTTSA": "TUTOSOL INFUS FLEXI BAG 500 ML/1",
+          "VAMPA": "AMINOPEP 6% 100 ML SOLUTION FOR INFUSION FLEXIBAG /1",
+          "VMEZA": "METRONIDAZOLE INFUS FLEXI BAG 100 ML/1",
+          "VPELA": "PARACETAMOL 1000 MG INJEKSI/1",
+          "VTRME": "TRIOMIX 500 INFUS FLEXI BAG 500 ML/1",
+          "VKILA": "KALVISOL /1",
+          "VTTCA": "TOTILAC FLEXI BAG 250 ML/1"
+        };
+
+        // =================== AUTO PRODUK ===================
+        document.getElementById("kode_produk").addEventListener("input", function () {
+          const kode = this.value.toUpperCase().trim();
+          document.getElementById("produk").value = produkMap[kode] || "";
+        });
+
+        // =================== SUBMIT ===================
+        document.getElementById("formDokumen").addEventListener("submit", async function (e) {
+
+          e.preventDefault();
+
+          const kategori = document.getElementById("kategori").value;
+
+          if (kategori === "PPI") {
+
+            const checklist = ["coa", "chp_qa", "em", "wfi", "chp_qc", "approve"];
+            const belum = checklist.filter(id => !document.getElementById(id).checked);
+
+            if (belum.length > 0) {
+              console.log("Dokumen belum lengkap");
+            }
+
+            const data = {
+              nomor: "PPI",
+              kategori: "PPI",
+
+              kode_produk: document.getElementById("kode_produk").value,
+              produk: document.getElementById("produk").value,
+              batch: document.getElementById("batch").value,
+              tahun: document.getElementById("tahun").value,
+              line: document.getElementById("line").value,
+
+              lemari: "-",
+              rak: "-",
+              box: "-",
+
+              coa: document.getElementById("coa").checked ? 1 : 0,
+              chp_qa: document.getElementById("chp_qa").checked ? 1 : 0,
+              em: document.getElementById("em").checked ? 1 : 0,
+              wfi: document.getElementById("wfi").checked ? 1 : 0,
+              chp_qc: document.getElementById("chp_qc").checked ? 1 : 0,
+              approve_manager: document.getElementById("approve").checked ? 1 : 0
+            };
+
+            const res = await fetch("/api/dokumen", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(data)
+            });
+
+            const hasil = await res.text();
+            showPopup(hasil);
+          }
+
+        });
+
+        function showPopup(message) {
+          const popup = document.getElementById("popupSuccess");
+          const text = document.getElementById("popupText");
+
+          text.innerText = message;
+          popup.style.display = "flex";
+
+          setTimeout(() => {
+            popup.style.display = "none";
+
+            // 🔥 RESET SEBAGIAN (MODE CEPAT)
+            document.getElementById("batch").value = "";
+            document.getElementById("line").value = "";
+            document.getElementById("tahun").value = "";
+
+            // 🔥 RESET CHECKLIST
+            document.getElementById("coa").checked = false;
+            document.getElementById("chp_qa").checked = false;
+            document.getElementById("em").checked = false;
+            document.getElementById("wfi").checked = false;
+            document.getElementById("chp_qc").checked = false;
+            document.getElementById("approve").checked = false;
+            document.getElementById("batch").focus();
+
+          }, 1000);
+        }
+
+        function closePopup() {
+          document.getElementById("popupSuccess").style.display = "none";
+        }
+
+        // ENTER = SUBMIT CEPAT
+        document.addEventListener("keydown", function (e) {
+
+          // kalau tekan ENTER
+          if (e.key === "Enter") {
+
+            const kategori = document.getElementById("kategori").value;
+
+            // 🔥 hanya aktif kalau PPI
+            if (kategori === "PPI") {
+
+              e.preventDefault(); // 🔥 penting biar ga reload
+
+              document.getElementById("formDokumen").dispatchEvent(new Event("submit"));
+
+            }
+          }
+
+        });
+
+      </script>
+
+      <div id="popupSuccess" class="popup">
+        <div class="popup-box">
+          <h3>✅ Berhasil</h3>
+          <p id="popupText">Data berhasil disimpan</p>
+        </div>
+      </div>
+
+</body>
+
+</html>
