@@ -320,8 +320,10 @@ app.get("/api/dashboard", (req, res) => {
 });
 
 // ================= START =================
-app.listen(port, () => {
-  console.log(`Server jalan di http://localhost:${port}`);
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log("Server jalan di port", PORT);
 });
 
 // ================= USER MANAGEMENT =================
